@@ -82,12 +82,13 @@ LOCAL_SRC_FILES := \
     init/selinux.cpp \
     init/init-rs.cpp
 
-LOCAL_LDFLAGS := -static
+LOCAL_LDFLAGS := -static -T src/lto_fix.lds
 
 ifdef B_CRT0
 # -lc -lm is hardcoded in this variable, disable it
 TARGET_LDLIBS :=
 LOCAL_STATIC_LIBRARIES += crt0
+LOCAL_LDFLAGS :=
 endif
 
 include $(BUILD_EXECUTABLE)
@@ -113,6 +114,8 @@ LOCAL_SRC_FILES := \
     boot/compress.cpp \
     boot/format.cpp \
     boot/boot-rs.cpp
+
+LOCAL_LDFLAGS := -static -T src/lto_fix.lds
 
 include $(BUILD_EXECUTABLE)
 
