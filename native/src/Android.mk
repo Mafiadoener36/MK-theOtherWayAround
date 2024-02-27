@@ -85,8 +85,6 @@ LOCAL_SRC_FILES := \
 LOCAL_LDFLAGS := -static -T src/lto_fix.lds
 
 ifdef B_CRT0
-# -lc -lm is hardcoded in this variable, disable it
-TARGET_LDLIBS :=
 LOCAL_STATIC_LIBRARIES += crt0
 LOCAL_LDFLAGS :=
 endif
@@ -178,7 +176,6 @@ include $(BUILD_STATIC_LIBRARY)
 include src/Android-rs.mk
 include src/base/Android.mk
 include src/external/Android.mk
-include src/crt0/Android.mk
 
 ifdef B_BB
 
