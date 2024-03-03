@@ -27,6 +27,12 @@ extern "C" [[maybe_unused]] void zygisk_inject_entry(void *handle) {
     ZLOGD("load success\n");
 }
 
+extern "C" [[maybe_unused]] NativeBridgeCallbacks NativeBridgeItf {
+    .version = 2,
+    .padding = {},
+    .isCompatibleWith = &is_compatible_with,
+};
+
 // The following code runs in zygote/app process
 
 static inline bool should_load_modules(uint32_t flags) {
