@@ -1,7 +1,7 @@
 use std::fs::File;
+use std::io;
 use std::io::BufReader;
 use std::sync::{Mutex, OnceLock};
-use std::{io, mem};
 
 use base::libc::{O_CLOEXEC, O_RDONLY};
 use base::{
@@ -9,9 +9,10 @@ use base::{
     Utf8CStrBufArr, Utf8CStrBufRef, WalkResult,
 };
 
-use crate::ffi::{get_magisk_tmp, CxxMagiskD, RequestCode};
+use crate::consts::MAIN_CONFIG;
+use crate::ffi::{get_magisk_tmp, RequestCode};
+use crate::get_prop;
 use crate::logging::magisk_logging;
-use crate::{get_prop, MAIN_CONFIG};
 
 // Global magiskd singleton
 pub static MAGISKD: OnceLock<MagiskD> = OnceLock::new();
@@ -63,7 +64,7 @@ impl MagiskD {
         match code {
             RequestCode::POST_FS_DATA => {
                 if check_data() && !state.contains(BootState::PostFsDataDone) {
-                    if self.as_cxx().post_fs_data() {
+                    if self.post_fs_data() {
                         state.set(BootState::SafeMode);
                     }
                     state.set(BootState::PostFsDataDone);
@@ -74,15 +75,15 @@ impl MagiskD {
                 unsafe { libc::close(client) };
                 if state.contains(BootState::PostFsDataDone) && !state.contains(BootState::SafeMode)
                 {
-                    self.as_cxx().late_start();
+                    self.late_start();
                     state.set(BootState::LateStartDone);
                 }
             }
             RequestCode::BOOT_COMPLETE => {
                 unsafe { libc::close(client) };
-                if !state.contains(BootState::SafeMode) {
+                if state.contains(BootState::PostFsDataDone) {
                     state.set(BootState::BootComplete);
-                    self.as_cxx().boot_complete()
+                    self.boot_complete()
                 }
             }
             _ => {
@@ -90,25 +91,18 @@ impl MagiskD {
             }
         }
     }
-
-    #[inline(always)]
-    fn as_cxx(&self) -> &CxxMagiskD {
-        unsafe { mem::transmute(self) }
-    }
 }
 
 pub fn daemon_entry() {
-    let mut qemu = get_prop(cstr!("ro.kernel.qemu"), false);
-    if qemu.is_empty() {
-        qemu = get_prop(cstr!("ro.boot.qemu"), false);
-    }
-    let is_emulator = qemu == "1";
+    let is_emulator = get_prop(cstr!("ro.kernel.qemu"), false) == "1"
+        || get_prop(cstr!("ro.boot.qemu"), false) == "1"
+        || get_prop(cstr!("ro.product.device"), false).contains("vsoc");
 
     // Load config status
     let mut buf = Utf8CStrBufArr::<64>::new();
     let path = FsPathBuf::new(&mut buf)
         .join(get_magisk_tmp())
-        .join(MAIN_CONFIG!());
+        .join(MAIN_CONFIG);
     let mut is_recovery = false;
     if let Ok(file) = path.open(O_RDONLY | O_CLOEXEC) {
         let mut file = BufReader::new(file);
