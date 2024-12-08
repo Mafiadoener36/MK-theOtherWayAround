@@ -137,7 +137,7 @@ static void mount_preinit_dir(string preinit_dev) {
     for (auto &info : parse_mount_info("self")) {
         if (info.root == "/" && info.device == dev) {
             // Already mounted, just bind mount
-            xmount(info.target.data(), PREINITMNT, nullptr, MS_BIND, nullptr);
+            xmount(info.target.data(), MIRRDIR, nullptr, MS_BIND, nullptr);
             mounted = true;
             break;
         }
