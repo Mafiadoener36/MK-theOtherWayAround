@@ -118,7 +118,6 @@ static void switch_root(const string &path) {
     chdir(path.data());
     xmount(path.data(), "/", nullptr, MS_MOVE, nullptr);
     chroot(".");
-
     LOGD("Cleaning rootfs\n");
     frm_rf(root);
 }
